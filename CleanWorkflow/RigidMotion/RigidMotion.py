@@ -15,7 +15,7 @@ from verifyHussey import getReferenceData # Generate Reference Data for the Curr
 # ======================
 
 # Set Parameters
-no_osc = 7.5 # no of oscillations to be simulatied
+no_osc = 5 # no of oscillations to be simulatied
 T_dt = 360 # no of timesteps per oscillation
 order = 2
 
@@ -32,7 +32,7 @@ f = W / (2*pi)
 tend = no_osc / f
 tau = 1 / (T_dt* f)
 
-RFx = rhof*pi*(0.5*diam) **2 * W * amp     # Reference Force Per Length ϱπ𝑎²ω𝑐
+RFx = rhof*pi*(0.5*diam)**2 * W * amp     # Reference Force Per Length ϱπ𝑎²ω𝑐
 Re = 2*pi*f*amp * diam / nuf
 
 # Debug Lines
@@ -57,6 +57,7 @@ def GenerateMesh(order, h=diam*3.5,grading=0.1):
     R = diam * 7.5
     hfine = diam * 0.25
 
+    # Local Mesh Refinement
     for r in np.linspace(0, R, 20):
         for theta in np.linspace(0, 2*np.pi, 40):
             x = r*np.cos(theta)
@@ -73,11 +74,11 @@ print("Mesh Cell Count:" + str(mesh.ne))
 
 ## Rigid Grid Motion
 # Define Cylinder Motion
-def circDisp(t,A=amp,f=f):
-    return -A*sin(2*pi*f*t) 
+def circDisp(t,A=amp,w=W):
+    return -A*sin(w*t) 
 
-def circVel(t,A=amp,f=f):
-    return -A*2*pi*f*cos(2*pi*f*t)
+def circVel(t,A=amp,w=W):
+    return -A*w*cos(w*t)
 
 ## Grid for rigid mesh motion
 D = VectorH1(mesh, order=order)
@@ -207,14 +208,13 @@ with TaskManager():
             else:
                 writer.writerow([t*f,fx/RFx,HusseyRef[-1]/RFx,circVel(t)])
 
-            # Error Calculation (absolute norm)
-            if t*f > 1.0:
-                mask = t*f > 1.0
-                HusseyMax = np.max(np.abs(HusseyRef[mask]))
-                MaxDiff = np.max(np.abs(Fx[mask]-HusseyRef[mask]))
-                normErr = MaxDiff/HusseyMax
-                print("Current Max Norm Err:" + str(normErr))
-
+            # Error Calculation
+            if t*f > 0:
+                mask = t*f > 0
+                HusseyMax = np.max(np.abs(HusseyRef))
+                DiffCurr =np.abs(Fx[-1]-HusseyRef[-1])
+                normErr = DiffCurr/HusseyMax
+                print("Current Norm Err:" + str(normErr))
 
             print("  |     Time (s)   | |  In-Line Force(N/m)   | |    Hussey(N/m)   ")
             print(f" |  {t:.8f}      | |    {fx/RFx:.8f}       | |   {HusseyRef[-1]/RFx:.8f}    ")
@@ -223,4 +223,3 @@ with TaskManager():
                 c.flush()
 
             i += 1
-        
