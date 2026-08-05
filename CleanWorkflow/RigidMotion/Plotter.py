@@ -21,6 +21,7 @@ df = pd.read_csv(
 )
 data = df.to_numpy()
 
+
 # Recorded Data
 t = data[:,0]
 FxNum = data[:,1]
