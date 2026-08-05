@@ -1,5 +1,6 @@
 import csv
 import numpy as np
+import pandas as pd 
 from math import *
 import matplotlib.pyplot as plt
 colors = [
@@ -14,7 +15,11 @@ colors = [
 # Data
 # ==========
 
-data = np.loadtxt("RigidMotionHighRe.csv",delimiter=",")
+df = pd.read_csv(
+    "FxData_RigidMotion_KC_0.1_m_1.0.csv",
+    header=None
+)
+data = df.to_numpy()
 
 # Recorded Data
 t = data[:,0]
@@ -23,12 +28,12 @@ Hussey = data[:,2]
 vel = data[:,3]
 
 # Run Parameters
-amp = data[1,4]
-diam = data[1,5]
-Re = data[1,6]
-KC = data[1,7]
-m = data[1,8]
-W = data[1,9]
+amp = data[0,4]
+diam = data[0,5]
+Re = data[0,6]
+KC = data[0,7]
+m = data[0,8]
+W = data[0,9]
 
 mask = (t >= 0) & (t <= 3)
 
@@ -51,7 +56,7 @@ ax2.set_ylabel('Normalized Velocity, V/Vmax', color=colors[4])
 ax2.tick_params(axis='y', labelcolor=colors[4])
 
 
-ax1.set_title(f"KC = {KC:.2f} m = {m:.2f}, Re = {Re:.3f}, Max Norm Err: {normErr:.4f}")
+ax1.set_title(f"KC = {KC:.3f} m = {m:.2f}, Re = {Re:.3f}, Max Norm Err: {normErr:.4f}")
 ax1.set_ylabel('Normalized Inline Force')
 ax1.set_xlabel('Phase Position, t/T')
 

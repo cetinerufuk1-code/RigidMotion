@@ -1,7 +1,4 @@
 # Forced Motion Oscullating Cylinder Verification Data
-#
-#
-#
 
 import numpy as np
 from math import *
@@ -50,18 +47,14 @@ def InterpData(mQ):
     return k0, k0P
 
 def getReferenceData(t,amp,w,diam,rhof,mQ):
-    # ====================
     #  Helper Functions
-    # ====================
     def circVel(t,A=amp,w=w):
         return -A*w*cos(w*t)
 
     def  circAcc(t,A=amp,w=w):
         return A*w**2*sin(w*t)
 
-    # ====================
     #  Validation Datas
-    # ===================
     k, kp = InterpData(mQ)  # k, k'
     a = diam/2
 
