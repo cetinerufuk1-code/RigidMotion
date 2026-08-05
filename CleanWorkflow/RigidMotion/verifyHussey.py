@@ -56,12 +56,12 @@ def getReferenceData(t,amp,w,diam,rhof,mQ):
         return A*w**2*sin(w*t)
 
     #  Validation Datas
-    k, kp = InterpData(mQ)  # k, k'
+    k0, k0P = InterpData(mQ)  # k, k'
     a = diam/2
 
     def FxCalcTheor1(t,a=a,rhof=rhof,k=k,kp=kp,w=w):
         acc, vel = circAcc(t), circVel(t) 
-        return -(pi*a**2*rhof)*(k*acc+kp*vel*w)
+        return -(pi*a**2*rhof)*(k0*acc+k0P*vel*w)
     
     HusseyRef = []
     for i in t:

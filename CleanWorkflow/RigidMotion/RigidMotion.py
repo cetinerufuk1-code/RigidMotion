@@ -32,8 +32,11 @@ f = W / (2*pi)
 tend = no_osc / f
 tau = 1 / (T_dt* f)
 
-RFx = rhof*pi*(0.5*diam)**2 * W * amp     # Reference Force Per Length ϱπ𝑎²ω𝑐
+RFx = rhof * pi * (0.5*diam)**2 * W**2 * amp     # Reference Force Per Length ϱπ𝑎²ω𝑐
 Re = 2*pi*f*amp * diam / nuf
+
+# Data Output (Change Name)
+fileNameCsv = "FxData_NewRefRigidMotion_KC_" + str(KC) + "_m_" + str(m) + ".csv"
 
 # Debug Lines
 print("Reynolds Number: " + str(Re) )
@@ -46,16 +49,16 @@ def GenerateMesh(order, h=diam*3.5,grading=0.1):
     circle = Circle((0,0),r= diam/2).Face()
     circle.edges.name = "circ"
 
-    fluid = Circle((0,0),r=diam*100).Face()
+    fluid = Circle((0,0),r=diam*150).Face()
     fluid.edges.name = "outlet"
     fluid.faces.name = "fluid"
 
     domain_fluid = fluid - circle
-    domain_fluid.edges[1].maxh = (diam * 0.005)
+    domain_fluid.edges[1].maxh = (diam * 0.01)
 
     mp = MeshingParameters(maxh=h,grading=grading)
     R = diam * 7.5
-    hfine = diam * 0.25
+    hfine = diam * 0.5
 
     # Local Mesh Refinement
     for r in np.linspace(0, R, 20):
@@ -65,11 +68,11 @@ def GenerateMesh(order, h=diam*3.5,grading=0.1):
             mp.RestrictH(x=x, y=y, z=0, h=hfine)
         
     mesh = Mesh(OCCGeometry(domain_fluid,dim=2).GenerateMesh(mp))
-    mesh.Curve(order)
+    mesh.Curve(order+1)
 
     return mesh
 
-mesh = GenerateMesh(order=order)
+mesh = GenerateMesh(order=order+1)
 print("Mesh Cell Count:" + str(mesh.ne))
 
 ## Rigid Grid Motion
@@ -167,9 +170,6 @@ pos, tHistory, Fx = [], [], []
 t = -(1/f)*0.25 # Start one quarter of a cycle early so that velocity is at min
 i = 0
 
-# Data Output
-fileNameCsv = "FxData_RigidMotion_KC_" + str(KC) + "_m_" + str(m) + ".csv"
-
 # VTK File for Visualization
 # fileNameVTK = "C:\\Users\\cetin\\MyLocalFiles\\UROP2\\RigidMotion\\VTKOut\\RigidMotion" + getDate.strftime("%H-%M-%S") 
 #vtkU = VTKOutput(mesh,coefs=[velocity,pressure],names=["Velocity","Pressure"],filename=fileNameVTK,subdivision=2)
@@ -216,8 +216,8 @@ with TaskManager():
                 normErr = DiffCurr/HusseyMax
                 print("Current Norm Err:" + str(normErr))
 
-            print("  |     Time (s)   | |  In-Line Force(N/m)   | |    Hussey(N/m)   ")
-            print(f" |  {t:.8f}      | |    {fx/RFx:.8f}       | |   {HusseyRef[-1]/RFx:.8f}    ")
+            print("  |     t/T         | |  In-Line Force(N/m)   | |    Hussey(N/m)   ")
+            print(f" |  {t*f:.8f}      | |    {fx/RFx:.8f}       | |   {HusseyRef[-1]/RFx:.8f}    ")
 
             if i % 25 == 0:
                 c.flush()
