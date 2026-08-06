@@ -59,7 +59,7 @@ def getReferenceData(t,amp,w,diam,rhof,mQ):
     k0, k0P = InterpData(mQ)  # k, k'
     a = diam/2
 
-    def FxCalcTheor1(t,a=a,rhof=rhof,k=k,kp=kp,w=w):
+    def FxCalcTheor1(t,a=a,rhof=rhof,k0=k0,k0P=k0P,w=w):
         acc, vel = circAcc(t), circVel(t) 
         return -(pi*a**2*rhof)*(k0*acc+k0P*vel*w)
     
