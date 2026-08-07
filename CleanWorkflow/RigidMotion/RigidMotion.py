@@ -1,3 +1,8 @@
+
+# Rigid Motion Oscilllating Cylinder Implementation
+# Newton Solver Exposed
+# Residual Reporting + Residual Based Force Calculation 
+
 from ngsolve import *
 from netgen.occ import *
 import ipywidgets as widgets
@@ -35,8 +40,9 @@ tau = 1 / (T_dt* f)
 RFx = rhof * pi * (0.5*diam)**2 * W**2 * amp     # Reference Force Per Length ϱπ𝑎²ω𝑐
 Re = 2*pi*f*amp * diam / nuf
 
-# Data Output (Change Name)
-fileNameCsv = "FxData_NewRefRigidMotion_KC_" + str(KC) + "_m_" + str(m) + ".csv"
+# Data Outputs (Change Name)
+fileNameCsv = "FxData_NewRef2RigidMotion_KC_" + str(KC) + "_m_" + str(m) + ".csv"
+# fileNameVTK = "C:\\Users\\cetin\\MyLocalFiles\\UROP2\\RigidMotion\\VTKOut\\RigidMotion" + getDate.strftime("%H-%M-%S") 
 
 # Debug Lines
 print("Reynolds Number: " + str(Re) )
@@ -153,25 +159,41 @@ bfa += (-J * (Trace(Grad(v) * Finv) * p + Trace(Grad(u) * Finv) * q)).Compile(
     true_compile, wait=True
 ) * dx("fluid")
 
-# ===== Helper Functions
-# X-Force Calculator (verify formulation)
-def FxCalc(I=I,F=F,J=J,Finv=Finv,mu=mu):
-    sigma_ale = -pressure * I + 2 * mu * Sym(Grad(velocity) * Finv)
-    nref = specialcf.normal(mesh.dim)
-    Fx = Integrate((J * sigma_ale * Finv.trans * nref)[0],
-               mesh.Boundaries("circ"),order=10)
-    return Fx
+# ===== Helper Functions ========
+# Residual Based X-Force Calculator
+def FxCalcRes(res,fes):
+    Fx_test = GridFunction(fes)
+    Fx_test.components[0].Set(CoefficientFunction((-1.0,0)), definedon=mesh.Boundaries("circ"))
+
+    return InnerProduct(res,Fx_test.vec)
+
+def nLNewtonSolver(bfa,gf,maxit,maxerr):
+    res = gf.vec.CreateVector()
+    du = gf.vec.CreateVector()
+    fes = gf.space
+    for it in range(maxit):
+        bfa.Apply(gf.vec,res)
+        bfa.AssembleLinearization(gf.vec)
+        du.data = bfa.mat.Inverse(fes.FreeDofs()) * res
+        gf.vec.data -= du
+
+        # stopping criteria
+        stopcritval = sqrt(abs(InnerProduct(du,res)))
+        if stopcritval < maxerr:
+            break
+    # Report Final Resiudal
+    bfa.Apply(gf.vec,res)
+    return res
 
 # ================================
 #    Time Loop
 # ===============================
 
-pos, tHistory, Fx = [], [], []
+HusseyRef = []
 t = -(1/f)*0.25 # Start one quarter of a cycle early so that velocity is at min
 i = 0
 
 # VTK File for Visualization
-# fileNameVTK = "C:\\Users\\cetin\\MyLocalFiles\\UROP2\\RigidMotion\\VTKOut\\RigidMotion" + getDate.strftime("%H-%M-%S") 
 #vtkU = VTKOutput(mesh,coefs=[velocity,pressure],names=["Velocity","Pressure"],filename=fileNameVTK,subdivision=2)
 #vtkU.Do(time = t)
 
@@ -192,32 +214,31 @@ with TaskManager():
             velocity.Set(CF((circVel(t),0)))
 
             # Solve for Fluid 
-            solvers.Newton(bfa,gf_solution,maxit = 50, maxerr = 1e-12, printing=False)
+            res = nLNewtonSolver(bfa,gf_solution,maxit = 50, maxerr = 1e-12)
             
             # Data Recording (in case of a crash)
-            tHistory.append(t) # t/T
-            fx = FxCalc()
-            Fx.append(fx)
+            fxRes = FxCalcRes(res,X)
 
             # Get Reference Data  
-            HusseyRef= getReferenceData(tHistory,amp,W,diam,rhof,m)
+            HusseyDat= getReferenceData(t,amp,W,diam,rhof,m)
+            HusseyRef.append(HusseyDat)
             # Record Data
             if firstStep:
-                writer.writerow([t*f,fx/RFx,HusseyRef[-1]/RFx,circVel(t),amp,diam,Re,KC,m,W])
+                writer.writerow([t*f,fxRes/RFx,HusseyDat/RFx,circVel(t),amp,diam,Re,KC,m,W])
                 firstStep = False
             else:
-                writer.writerow([t*f,fx/RFx,HusseyRef[-1]/RFx,circVel(t)])
-
+                writer.writerow([t*f,fxRes/RFx,HusseyDat/RFx,circVel(t)])
+                                
             # Error Calculation
-            if t*f > 0:
+            if t*f > -0.5:
                 mask = t*f > 0
                 HusseyMax = np.max(np.abs(HusseyRef))
-                DiffCurr =np.abs(Fx[-1]-HusseyRef[-1])
+                DiffCurr =np.abs(fxRes-HusseyRef[-1])
                 normErr = DiffCurr/HusseyMax
                 print("Current Norm Err:" + str(normErr))
 
-            print("  |     t/T         | |  In-Line Force(N/m)   | |    Hussey(N/m)   ")
-            print(f" |  {t*f:.8f}      | |    {fx/RFx:.8f}       | |   {HusseyRef[-1]/RFx:.8f}    ")
+            print("  |     t/T         | |         FxRes             | |      Hussey(N/m)   ")
+            print(f" |  {t*f:.8f}      | |     {fxRes/RFx:.8f}       | |     {HusseyRef[-1]/RFx:.8f}    ")
 
             if i % 25 == 0:
                 c.flush()

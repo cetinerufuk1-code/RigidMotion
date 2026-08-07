@@ -63,10 +63,8 @@ def getReferenceData(t,amp,w,diam,rhof,mQ):
         acc, vel = circAcc(t), circVel(t) 
         return -(pi*a**2*rhof)*(k0*acc+k0P*vel*w)
     
-    HusseyRef = []
-    for i in t:
-        HusseyRef.append(FxCalcTheor1(i))
-
+    HusseyRef = FxCalcTheor1(t)
+    
     return HusseyRef
 
 

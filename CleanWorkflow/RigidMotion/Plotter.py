@@ -16,7 +16,7 @@ colors = [
 # ==========
 
 df = pd.read_csv(
-    "FxData_RigidMotion_KC_0.1_m_1.0.csv",
+    "FxData_NewRefRigidMotion_KC_0.001_m_3.0.csv",
     header=None
 )
 data = df.to_numpy()
@@ -24,31 +24,33 @@ data = df.to_numpy()
 
 # Recorded Data
 t = data[:,0]
-FxNum = data[:,1]
-Hussey = data[:,2]
-vel = data[:,3]
+FxSigma = data[:,1]
+FxRes = data[:,2]
+Hussey = data[:,3]
+vel = data[:,4]
 
 # Run Parameters
-amp = data[0,4]
-diam = data[0,5]
-Re = data[0,6]
-KC = data[0,7]
-m = data[0,8]
-W = data[0,9]
+amp = data[0,5]
+diam = data[0,6]
+Re = data[0,7]
+KC = data[0,8]
+m = data[0,9]
+W = data[0,10]
 
 mask = (t >= 0) & (t <= 3)
 
 # Error Calculation (absolute norm)
 HusseyMax = np.max(np.abs(Hussey[mask]))
-MaxDiff = np.max(np.abs(FxNum[mask]-Hussey[mask]))
+MaxDiff = np.max(np.abs(FxRes[mask]-Hussey[mask]))
 normErr = MaxDiff/HusseyMax
 
 
 ## Plotting
 fig, ax1 = plt.subplots() # subplots ve twinx
 
-ax1.plot(t[mask],FxNum[mask],color=colors[0],label="Numerical Data")
-ax1.plot(t[mask],Hussey[mask],color=colors[2], label="Hussey/Vujacic Reference")
+ax1.plot(t[mask],Hussey[mask],color=colors[2], label="Hussey/Vujacic Reference",linewidth=3,alpha=0.5)
+ax1.plot(t[mask],FxRes[mask],color=colors[0],label="Numerical Data",linestyle="-.")
+
 
 
 ax2 = ax1.twinx()
